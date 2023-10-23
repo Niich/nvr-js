@@ -1,3 +1,20 @@
+# TODO
+- [ ] change current logic that looks for video files to instead look on the shared smb location the mediamtx writes to. This could be with smb in node, shared container mount, mouned smb to local files. 
+- [ ] change sqlite logic to use knex and prostgres. Instead of haveing a seperate "events" db there will just an events view in postgres that pulls from all the other data collectors
+- [ ] change the camera registration from being part of the config and have it "calculated" based on the recording paths. The dir structure inside `recordings` is the same as the url access path. e.g. `recordings/desktop_123/user_abc/0` would allow you to watch the stream `rtsp://server.address/desktop_123/user_abc/0` note: the 0 is the index of the screen, depending on how video is captured it could also be a string.
+- [ ] add some kind of grouping and or filtering to the list of videos. 
+- [ ] add some kind of filtering to the events that show on the timeline. 
+
+To start deving run
+```
+npm
+sudo npm -g install pm2
+pm2-dev NVRJS.js
+```
+if you are in vscode you can also try attaching a debugger to node by clicking `javascript debug terminal` in the debuging area. Then running `node NVRJS.js` in the debug terminal.
+<p>
+You will also probably need to update the config info to point at servers and files that exist in your environment.
+
 ![Image](./readme.png)  
 
 # nvr-js
