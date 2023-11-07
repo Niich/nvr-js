@@ -71,8 +71,8 @@
               <img class="snapShot" src="/snapshot/{{@key}}/120" />
             </td>
             <td>
-              <button onclick="StartLive('{{@key}}','{{this.name}}','{{this.liveConfig.codecString}}')" class="videoButton"><i class="fa fa-play"></i> Live</button>
-              <button onclick="StartTimeline('{{@key}}','{{this.name}}')" class="videoButton"><i class="fa fa-history"></i> Timeline</button>
+              <button onclick="StartLive('{{this._id}}','{{this.name}}','{{this.liveConfig.codecString}}')" class="videoButton"><i class="fa fa-play"></i> Live</button>
+              <button onclick="StartTimeline('{{this._id}}','{{this.name}}')" class="videoButton"><i class="fa fa-history"></i> Timeline</button>
             </td>
           </tr>
         </table>

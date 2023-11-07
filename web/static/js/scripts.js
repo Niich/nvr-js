@@ -188,6 +188,7 @@ function GetSegmentsAndEvents(Timeline, DataSet, Start, End, ID) {
 }
 
 function StartLive(ID, Name, Codec) {
+
 	let buffer;
 	let socket;
 

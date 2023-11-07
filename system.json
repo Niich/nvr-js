@@ -1,0 +1,14 @@
+{
+    "username": "admin",
+    "disableUISecurity": "false",
+    "password": "$2a$10$CnOx/6vFY2ehRDf68yqd..aLlv0UM.zeBLKnRjuU8YykCsC2Ap3iG",
+    "apiKey": "'$2a$10$N53ci.EIQ7JCu6u1HlOjoO",
+    "cookieKey": "f3gi6FLhIPVV31d1TBQUPEAngrI3wAoP",
+    "interfacePort": "7878",
+    "storageVolume": "/mnt/c/Users/crick/Documents/1-work-projects/work-capstone/nvr-js/Volumes/CCTV",
+    "ffmpegLocation": "/usr/bin/ffmpeg",
+    "continuousSegTimeMinutes": "15",
+    "continuousDays": "14",
+    "continuousPurgeIntervalHours": "24",
+    "eventSensorIdCoolOffSeconds": "60"
+}

@@ -18,6 +18,13 @@ const customParseFormat = require('dayjs/plugin/customParseFormat');
 dayjs.extend(customParseFormat);
 const RateLimiter = require('express-rate-limit');
 
+// Mongo stuff
+const {dbconnect, getCameras} = require('./accessdb')
+dbconnect();
+
+// Mongo stuff ^
+
+
 console.log(' - Checking config.');
 if (!fs.existsSync(path.join(os.homedir(), 'nvrjs.config.js'))) {
 	fs.copyFileSync(
@@ -150,8 +157,11 @@ App.post('/login', (req, res) => {
 
 App.get('/dashboard', CheckAuthMW, (req, res) => {
 	res.type('text/html');
-	res.status(200);
-	res.end(CompiledPages.Dash(config));
+	getCameras().then((cameras)=>{
+		res.status(200)
+		res.end(CompiledPages.Dash({...config, cameras}));
+	})
+	
 });
 
 // System Info
@@ -188,15 +198,14 @@ function getSystemInfo(req, res) {
 App.get('/api/:APIKey/cameras', (req, res) => {
 	if (bcrypt.compareSync(req.params.APIKey, config.system.apiKey)) {
 		const Cams = [];
-
-		Object.keys(config.cameras).forEach((ID) => {
-			const Cam = config.cameras[ID];
-			Cams.push({ id: ID, name: Cam.name, continuous: Cam.continuous });
+		getCameras().then((dbcameras)=>{
+			for (const Cam of dbcameras) {
+				Cams.push({id: Cam._id, name: Cam.name, continuous: Cam.continous})
+			}
+			res.type('application/json');
+			res.status(200);
+			res.end(JSON.stringify(Cams));
 		});
-
-		res.type('application/json');
-		res.status(200);
-		res.end(JSON.stringify(Cams));
 	} else {
 		res.status(401);
 		res.end();
@@ -206,7 +215,8 @@ App.get('/api/:APIKey/cameras', (req, res) => {
 // Event Creation
 App.post('/api/:APIKey/event/:CameraID', (req, res) => {
 	if (bcrypt.compareSync(req.params.APIKey, config.system.apiKey)) {
-		if (config.cameras[req.params.CameraID].continuous) {
+		getCameras().then((dbcameras)=>{
+			if (dbcameras[req.params.CameraID].continuous) {
 			if (!SensorTimestamps.hasOwnProperty(req.body.sensorId)) {
 				FIFO.enqueue({
 					statement:
@@ -236,7 +246,8 @@ App.post('/api/:APIKey/event/:CameraID', (req, res) => {
 		} else {
 			res.status(501);
 			res.end();
-		}
+		}	
+	});	
 	} else {
 		res.status(401);
 		res.end();
@@ -258,49 +269,59 @@ App.get('/api/:APIKey/snapshot/:CameraID/:Width', (req, res) => {
 });
 
 function getSnapShot(Res, CameraID, Width) {
+	// Here CameraID is being passed in as the index of the cameram rather than the camera's actual ID
 	const CommandArgs = [];
-	const Cam = config.cameras[CameraID];
-
-	Object.keys(Cam.inputConfig).forEach((inputConfigKey) => {
-		CommandArgs.push('-' + inputConfigKey);
-		if (Cam.inputConfig[inputConfigKey].length > 0) {
-			CommandArgs.push(Cam.inputConfig[inputConfigKey]);
-		}
+	getCameras().then((dbcameras)=>{
+		const Cam = dbcameras[CameraID]
+		Object.keys(Cam.inputConfig).forEach((inputConfigKey) => {
+			CommandArgs.push('-' + inputConfigKey);
+			if (Cam.inputConfig[inputConfigKey].length > 0) {
+				CommandArgs.push(Cam.inputConfig[inputConfigKey]);
+			}
+		});
+		CommandArgs.push('-i');
+		CommandArgs.push(Cam.input);
+		CommandArgs.push('-vf');
+		CommandArgs.push('scale=' + Width + ':-1');
+		CommandArgs.push('-vframes');
+		CommandArgs.push('1');
+		CommandArgs.push('-f');
+		CommandArgs.push('image2');
+		CommandArgs.push('-');
+	
+		const Process = childprocess.spawn(
+			config.system.ffmpegLocation,
+			CommandArgs,
+			{ env: process.env, stderr: 'ignore' }
+		);
+	
+		let imageBuffer = Buffer.alloc(0);
+	
+		Process.stdout.on('data', function (data) {
+			imageBuffer = Buffer.concat([imageBuffer, data]);
+		});
+	
+		Process.on('exit', (Code, Signal) => {
+			const _Error = FFMPEGExitDueToError(Code, Signal);
+			if (!_Error) {
+				Res.type('image/jpeg');
+				Res.status(200);
+				Res.end(Buffer.from(imageBuffer, 'binary'));
+			} else {
+				Res.status(500);
+				Res.end();
+			}
+		});
 	});
+	// const Cam = config.cameras[CameraID];
+	// Object.keys(Cam.inputConfig).forEach((inputConfigKey) => {
+	// 	CommandArgs.push('-' + inputConfigKey);
+	// 	if (Cam.inputConfig[inputConfigKey].length > 0) {
+	// 		CommandArgs.push(Cam.inputConfig[inputConfigKey]);
+	// 	}
+	// });
 
-	CommandArgs.push('-i');
-	CommandArgs.push(Cam.input);
-	CommandArgs.push('-vf');
-	CommandArgs.push('scale=' + Width + ':-1');
-	CommandArgs.push('-vframes');
-	CommandArgs.push('1');
-	CommandArgs.push('-f');
-	CommandArgs.push('image2');
-	CommandArgs.push('-');
-
-	const Process = childprocess.spawn(
-		config.system.ffmpegLocation,
-		CommandArgs,
-		{ env: process.env, stderr: 'ignore' }
-	);
-
-	let imageBuffer = Buffer.alloc(0);
-
-	Process.stdout.on('data', function (data) {
-		imageBuffer = Buffer.concat([imageBuffer, data]);
-	});
-
-	Process.on('exit', (Code, Signal) => {
-		const _Error = FFMPEGExitDueToError(Code, Signal);
-		if (!_Error) {
-			Res.type('image/jpeg');
-			Res.status(200);
-			Res.end(Buffer.from(imageBuffer, 'binary'));
-		} else {
-			Res.status(500);
-			Res.end();
-		}
-	});
+	
 }
 
 // Get Event Data
@@ -339,12 +360,27 @@ function GetEventData(res, CameraID, Start, End) {
 	});
 }
 
+
 const Processors = {};
-const Cameras = Object.keys(config.cameras);
-Cameras.forEach((cameraID) => {
-	const Cam = config.cameras[cameraID];
-	InitCamera(Cam, cameraID);
+getCameras().then((dbcameras)=>{
+	for (const Cam of dbcameras) {
+	//const cameras = Object.keys(dbcameras);
+	//cameras.forEach((cameraID) => {
+	//	const Cam = dbcameras[cameraID]
+		InitCamera(Cam, Cam._id.toString())
+	}
 });
+
+// const Cameras = Object.keys(config.cameras);
+// Cameras.forEach((cameraID) => {
+// 	const Cam = config.cameras[cameraID];
+// 	console.log("ORIGINAL --------------------")
+// 	console.log(Cam)
+// 	console.log(cameraID)
+// 	InitCamera(Cam, cameraID);
+// });
+
+
 
 function CreateOrConnectSQL(CB) {
 	const Path = path.join(

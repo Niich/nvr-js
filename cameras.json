@@ -1,0 +1,94 @@
+[
+    {
+        "name": "Lincoln Stream",
+        "inputConfig": {
+            "use_wallclock_as_timestamps": "1",
+            "fflags": "+igndts",
+            "analyzeduration": "1000000",
+            "probesize": "1000000",
+            "rtsp_transport": "tcp",
+            "stimeout": "30000000"
+        },
+        "input": "rtsp://10.10.26.5:8554/lincoln.stream",
+        "continuous": "true",
+        "liveConfig": {
+            "codecString": "video/mp4; codecs=\"avc1.64001f\"",
+            "streamConfig": {
+                "an": "",
+                "vcodec": "copy",
+                "f": "mp4",
+                "movflags": "+frag_keyframe+empty_moov+default_base_moof",
+                "reset_timestamps": "1"
+            }
+        }
+    },
+    {
+        "name": "Free Stream",
+        "inputConfig": {
+            "use_wallclock_as_timestamps": "1",
+            "fflags": "+igndts",
+            "analyzeduration": "1000000",
+            "probesize": "1000000",
+            "rtsp_transport": "tcp",
+            "stimeout": "30000000"
+        },
+        "input": "rtsp://10.10.26.5:8554/free.stream",
+        "continuous": "true",
+        "liveConfig": {
+            "codecString": "video/mp4; codecs=\"avc1.64001f\"",
+            "streamConfig": {
+                "an": "",
+                "vcodec": "copy",
+                "f": "mp4",
+                "movflags": "+frag_keyframe+empty_moov+default_base_moof",
+                "reset_timestamps": "1"
+            }
+        }
+    },
+    {
+        "name": "Hannah Stream",
+        "inputConfig": {
+            "use_wallclock_as_timestamps": "1",
+            "fflags": "+igndts",
+            "analyzeduration": "1000000",
+            "probesize": "1000000",
+            "rtsp_transport": "tcp",
+            "stimeout": "30000000"
+        },
+        "input": "rtsp://10.10.26.5:8554/hannah.stream",
+        "continuous": "true",
+        "liveConfig": {
+            "codecString": "video/mp4; codecs=\"avc1.64001f\"",
+            "streamConfig": {
+                "an": "",
+                "vcodec": "copy",
+                "f": "mp4",
+                "movflags": "+frag_keyframe+empty_moov+default_base_moof",
+                "reset_timestamps": "1"
+            }
+        }
+    },
+    {
+        "name": "Young Stream",
+        "inputConfig": {
+            "use_wallclock_as_timestamps": "1",
+            "fflags": "+igndts",
+            "analyzeduration": "1000000",
+            "probesize": "1000000",
+            "rtsp_transport": "tcp",
+            "stimeout": "30000000"
+        },
+        "input": "rtsp://10.10.26.5:8554/young.stream",
+        "continuous": "true",
+        "liveConfig": {
+            "codecString": "video/mp4; codecs=\"avc1.64001f\"",
+            "streamConfig": {
+                "an": "",
+                "vcodec": "copy",
+                "f": "mp4",
+                "movflags": "+frag_keyframe+empty_moov+default_base_moof",
+                "reset_timestamps": "1"
+            }
+        }
+    }
+]
