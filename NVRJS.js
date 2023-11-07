@@ -639,5 +639,5 @@ async function purgeContinuous() {
 	});
 }
 
-HTTP.listen(config.system.interfacePort);
+HTTP.listen(config.system.interfacePort, '0.0.0.0');
 console.log(' - NVR JS is Ready!');
