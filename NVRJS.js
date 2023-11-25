@@ -19,8 +19,11 @@ dayjs.extend(customParseFormat);
 const RateLimiter = require('express-rate-limit');
 
 // Mongo stuff
-const {dbconnect, getCameras} = require('./accessdb')
-dbconnect();
+const uri = 'mongodb://root:rootpassword123@mongodb.test.svc/';
+const mdb = 'nvrjsdb';
+const { NvrMongo } = require('./accessdb')
+const mongoConnection = new NvrMongo(uri,mdb)
+mongoConnection.dbconnect();
 
 // Mongo stuff ^
 
@@ -157,7 +160,7 @@ App.post('/login', (req, res) => {
 
 App.get('/dashboard', CheckAuthMW, (req, res) => {
 	res.type('text/html');
-	getCameras().then((cameras)=>{
+	mongoConnection.getCameras().then((cameras)=>{
 		res.status(200)
 		res.end(CompiledPages.Dash({...config, cameras}));
 	})
@@ -198,7 +201,7 @@ function getSystemInfo(req, res) {
 App.get('/api/:APIKey/cameras', (req, res) => {
 	if (bcrypt.compareSync(req.params.APIKey, config.system.apiKey)) {
 		const Cams = [];
-		getCameras().then((dbcameras)=>{
+		mongoConnection.getCameras().then((dbcameras)=>{
 			for (const Cam of dbcameras) {
 				Cams.push({id: Cam._id, name: Cam.name, continuous: Cam.continous})
 			}
@@ -271,7 +274,7 @@ App.get('/api/:APIKey/snapshot/:CameraID/:Width', (req, res) => {
 function getSnapShot(Res, CameraID, Width) {
 	// Here CameraID is being passed in as the index of the cameram rather than the camera's actual ID
 	const CommandArgs = [];
-	getCameras().then((dbcameras)=>{
+	mongoConnection.getCameras().then((dbcameras)=>{
 		const Cam = dbcameras[CameraID]
 		Object.keys(Cam.inputConfig).forEach((inputConfigKey) => {
 			CommandArgs.push('-' + inputConfigKey);
@@ -362,7 +365,7 @@ function GetEventData(res, CameraID, Start, End) {
 
 
 const Processors = {};
-getCameras().then((dbcameras)=>{
+mongoConnection.getCameras().then((dbcameras)=>{
 	for (const Cam of dbcameras) {
 	//const cameras = Object.keys(dbcameras);
 	//cameras.forEach((cameraID) => {
@@ -447,8 +450,7 @@ function InitCamera(Cam, cameraID) {
 		express.static(
 			path.join(
 				config.system.storageVolume,
-				'NVRJS_CAMERA_RECORDINGS',
-				cameraID
+				Cam.recordingPath
 			),
 			{ acceptRanges: true }
 		)
