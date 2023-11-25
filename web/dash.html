@@ -68,7 +68,7 @@
         <table class="cameraPanelOption">
           <tr>
             <td>
-              <img class="snapShot" src="/snapshot/{{@key}}/120" />
+              <img class="snapShot" src="/snapshot/{{@key}}/120" onerror="this.onerror=null;this.src='static/images/offline.jpg';"/>
             </td>
             <td>
               <button onclick="StartLive('{{this._id}}','{{this.name}}','{{this.liveConfig.codecString}}')" class="videoButton"><i class="fa fa-play"></i> Live</button>

@@ -148,7 +148,8 @@ function EventSort(a, b) {
 
 function GetSegmentsAndEvents(Timeline, DataSet, Start, End, ID) {
 	$.getJSON('/geteventdata/' + ID + '/' + Start + '/' + End, function (data) {
-		data.segments.sort(EventSort);
+		// Just sort the data in the db responce before sending to this function
+		// data.segments.sort(EventSort);
 		Segments = data.segments;
 
 		DataSet.clear();
@@ -171,16 +172,18 @@ function GetSegmentsAndEvents(Timeline, DataSet, Start, End, ID) {
 			});
 		}
 
-		for (let i = 0; i < data.events.length; i++) {
-			const Event = data.events[i];
-			const Start = dayjs.unix(Event.Date);
-
-			DataSet.add({
-				start: Start.toDate(),
-				group: 'Events',
-				content: Event.Name,
-				style: 'background-color: orangered;color: white;border-radius: 6px;'
-			});
+		if (data.events) {
+			for (let i = 0; i < data.events.length; i++) {
+				const Event = data.events[i];
+				const Start = dayjs.unix(Event.Date);
+	
+				DataSet.add({
+					start: Start.toDate(),
+					group: 'Events',
+					content: Event.Name,
+					style: 'background-color: orangered;color: white;border-radius: 6px;'
+				});
+			}
 		}
 
 		Timeline.redraw();

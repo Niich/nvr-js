@@ -24,6 +24,12 @@ class NvrMongo {
         const cameras = await db.collection("cameras").find().toArray();
         return cameras;
     }
+    async getCam(cameraID) {
+        // await dbconnect();
+        const db = this.client.db(this.db);
+        const cameras = await db.collection("cameras").find({'cameraID': cameraID});
+        return cameras;
+    }
     
     async getUser(){
         
