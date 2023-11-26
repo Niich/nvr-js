@@ -234,6 +234,9 @@ function StartLive(ID, Name, Codec) {
 	const DataURL = URL.createObjectURL(mediaSource);
 	VE5.src = DataURL;
 
+	// TODO: 
+	// make a call here to start the stream connection instead of having the 'respawn' logic that was original.
+	// also need to handle ending the stream when the player closes.
 	mediaSource.addEventListener('sourceopen', function (e) {
 		buffer = mediaSource.addSourceBuffer(Codec);
 		buffer.mode = 'sequence';

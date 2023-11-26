@@ -27,7 +27,7 @@ class NvrMongo {
     async getCam(cameraID) {
         // await dbconnect();
         const db = this.client.db(this.db);
-        const cameras = await db.collection("cameras").find({'cameraID': cameraID});
+        const cameras = await db.collection("cameras").findOne({'_id': cameraID});
         return cameras;
     }
     

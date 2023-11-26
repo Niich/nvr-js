@@ -40,7 +40,7 @@ console.log(' - Config loaded: ' + configPath);
 // Mongo stuff
 
 const { NvrMongo } = require('./accessdb')
-const mongoConnection = new NvrMongo(config.system.mongo.uri,config.system.mongo.db)
+const mongoConnection = new NvrMongo(config.system.mongo.uri, config.system.mongo.db)
 mongoConnection.dbconnect();
 config.cameras = mongoConnection.getCameras();
 // Mongo stuff ^
@@ -57,7 +57,7 @@ console.log(' - Checking volumes and ffmpeg.');
 if (!fs.existsSync(config.system.storageVolume)) {
 	console.log(' - Storage volume does not exist');
 	process.exit();
-} 
+}
 // else {
 // 	try {
 // 		if (
@@ -170,11 +170,11 @@ App.post('/login', (req, res) => {
 
 App.get('/dashboard', CheckAuthMW, (req, res) => {
 	res.type('text/html');
-	mongoConnection.getCameras().then((cameras)=>{
+	mongoConnection.getCameras().then((cameras) => {
 		res.status(200)
-		res.end(CompiledPages.Dash({...config, cameras}));
+		res.end(CompiledPages.Dash({ ...config, cameras }));
 	})
-	
+
 });
 
 // System Info
@@ -193,16 +193,16 @@ App.get('/systeminfo', CheckAuthMW, (req, res) => {
 function getSystemInfo(req, res) {
 	osu.cpu.usage().then((CPU) => {
 
-			osu.mem.info().then((MEM) => {
-				const Info = {
-					CPU: CPU,
-					DISK: 69,
-					MEM: MEM
-				};
-				res.type('application/json');
-				res.status(200);
-				res.end(JSON.stringify(Info));
-			});
+		osu.mem.info().then((MEM) => {
+			const Info = {
+				CPU: CPU,
+				DISK: 69,
+				MEM: MEM
+			};
+			res.type('application/json');
+			res.status(200);
+			res.end(JSON.stringify(Info));
+		});
 
 	});
 }
@@ -211,9 +211,9 @@ function getSystemInfo(req, res) {
 App.get('/api/:APIKey/cameras', (req, res) => {
 	if (bcrypt.compareSync(req.params.APIKey, config.system.apiKey)) {
 		const Cams = [];
-		mongoConnection.getCameras().then((dbcameras)=>{
+		mongoConnection.getCameras().then((dbcameras) => {
 			for (const Cam of dbcameras) {
-				Cams.push({id: Cam._id, name: Cam.name, continuous: Cam.continous})
+				Cams.push({ id: Cam._id, name: Cam.name, continuous: Cam.continous })
 			}
 			res.type('application/json');
 			res.status(200);
@@ -228,39 +228,39 @@ App.get('/api/:APIKey/cameras', (req, res) => {
 // Event Creation
 App.post('/api/:APIKey/event/:CameraID', (req, res) => {
 	if (bcrypt.compareSync(req.params.APIKey, config.system.apiKey)) {
-		getCameras().then((dbcameras)=>{
+		getCameras().then((dbcameras) => {
 			if (dbcameras[req.params.CameraID].continuous) {
-			if (!SensorTimestamps.hasOwnProperty(req.body.sensorId)) {
-				FIFO.enqueue({
-					statement:
-						'INSERT INTO Events(EventID,CameraID,Name,SensorID,Date) VALUES(?,?,?,?,?)',
-					params: [
-						generateUUID(),
-						req.params.CameraID,
-						req.body.name,
-						req.body.sensorId,
-						req.body.date
-					]
-				});
-				res.status(204);
-				res.end();
+				if (!SensorTimestamps.hasOwnProperty(req.body.sensorId)) {
+					FIFO.enqueue({
+						statement:
+							'INSERT INTO Events(EventID,CameraID,Name,SensorID,Date) VALUES(?,?,?,?,?)',
+						params: [
+							generateUUID(),
+							req.params.CameraID,
+							req.body.name,
+							req.body.sensorId,
+							req.body.date
+						]
+					});
+					res.status(204);
+					res.end();
 
-				SensorTimestamps[req.body.sensorId] = dayjs().unix();
+					SensorTimestamps[req.body.sensorId] = dayjs().unix();
 
-				setTimeout(() => {
-					delete SensorTimestamps[req.body.sensorId];
-				}, 1000 * config.system.eventSensorIdCoolOffSeconds);
+					setTimeout(() => {
+						delete SensorTimestamps[req.body.sensorId];
+					}, 1000 * config.system.eventSensorIdCoolOffSeconds);
 
-				return;
+					return;
+				} else {
+					res.status(429);
+					res.end();
+				}
 			} else {
-				res.status(429);
+				res.status(501);
 				res.end();
 			}
-		} else {
-			res.status(501);
-			res.end();
-		}	
-	});	
+		});
 	} else {
 		res.status(401);
 		res.end();
@@ -284,7 +284,7 @@ App.get('/api/:APIKey/snapshot/:CameraID/:Width', (req, res) => {
 function getSnapShot(Res, CameraID, Width) {
 	// Here CameraID is being passed in as the index of the cameram rather than the camera's actual ID
 	const CommandArgs = [];
-	mongoConnection.getCameras().then((dbcameras)=>{
+	mongoConnection.getCameras().then((dbcameras) => {
 		const Cam = dbcameras[CameraID]
 		if (Cam.isLive) {
 			Object.keys(Cam.inputConfig).forEach((inputConfigKey) => {
@@ -302,19 +302,19 @@ function getSnapShot(Res, CameraID, Width) {
 			CommandArgs.push('-f');
 			CommandArgs.push('image2');
 			CommandArgs.push('-');
-		
+
 			const Process = childprocess.spawn(
 				config.system.ffmpegLocation,
 				CommandArgs,
 				{ env: process.env, stderr: 'ignore' }
 			);
-		
+
 			let imageBuffer = Buffer.alloc(0);
-		
+
 			Process.stdout.on('data', function (data) {
 				imageBuffer = Buffer.concat([imageBuffer, data]);
 			});
-		
+
 			Process.on('exit', (Code, Signal) => {
 				const _Error = FFMPEGExitDueToError(Code, Signal);
 				if (!_Error) {
@@ -340,7 +340,7 @@ function getSnapShot(Res, CameraID, Width) {
 	// 	}
 	// });
 
-	
+
 }
 
 // Get Event Data
@@ -357,63 +357,121 @@ App.get('/geteventdata/:CameraID/:Start/:End', CheckAuthMW, (req, res) => {
 	GetEventData(res, req.params.CameraID, req.params.Start, req.params.End);
 });
 
-
-function getSegmentsAndEventsFromNifi(nifires,callerResponse) { 
-	let data = ''
-	const Data = {};
-	
-	if (nifires.statusCode != 200) {
-		callerResponse.type('text');
-		callerResponse.status(nifires.statusCode);
-		callerResponse.end();
-	}
-	
-	nifires.on('data', (chunk) => { 
-		data += chunk; 
-	}); 
-	
-	// Ending the response  
-	nifires.on('end', () => { 
-		if (data === undefined || data === null || data == '') {
-			data = '[]'
-			console.log('data contained no segments') 
+function getEventsFromNifi(CameraID, Start, End) {
+	const nifiUrl = new URL('/api/nvrjs/geteventdata', config.system.nifi.uri);
+	nifiUrl.searchParams.append('CameraID', CameraID)
+	nifiUrl.searchParams.append('Start', Start)
+	nifiUrl.searchParams.append('End', End)
+	const resolveResponse = (nifiResponse, resolve) => {
+		let data = ''
+		if (nifiResponse.statusCode != 200) {
+			// need to do something here
 		}
-		Data.segments = JSON.parse(data)
-		console.log('segments:', JSON.parse(Data.segments.length)) 
-		callerResponse.type('application/json');
-		callerResponse.status(200);
-		callerResponse.end(JSON.stringify(Data));
-	}); 
-	   
+
+		nifiResponse.on('data', (chunk) => {
+			data += chunk;
+		});
+
+		// Ending the response  
+		nifiResponse.on('end', () => {
+			if (data === undefined || data === null || data == '') {
+				data = '[]'
+				console.log('data contained no events')
+			}
+			console.log(JSON.parse(data).events)
+			resolve(JSON.parse(JSON.parse(data).events))
+		});
+
+	}
+	const errorResponse = (err, reject) => {
+		console.log("Error: ", err)
+		reject(err)
+	}
+
+	const returnPromise = new Promise((resolve, reject) => {
+		/**
+		 * First check if we need to use http or https
+		 * 
+		 * then send the request to nifi and return the result 
+		 * using the `res` var that was passed from the front end client
+		 */
+		if (config.system.nifi.useHTTPS) {
+			const req = https.request(nifiUrl.toString(), (resp) => resolveResponse(resp, resolve)).on("error", (err) => errorResponse(err, reject)).end()
+		} else {
+			const req = https.request(nifiUrl.toString(), (resp) => resolveResponse(resp, resolve)).on("error", (err) => errorResponse(err, reject)).end()
+		}
+	});
+
+
+	return returnPromise
 }
+
+function getSegmentsFromNifi(CameraID, Start, End) {
+
+	const nifiUrl = new URL('/api/nvrjs/getsegments', config.system.nifi.uri);
+	nifiUrl.searchParams.append('CameraID', CameraID)
+	nifiUrl.searchParams.append('Start', Start)
+	nifiUrl.searchParams.append('End', End)
+	const resolveResponse = (nifiResponse, resolve) => {
+		let data = ''
+		if (nifiResponse.statusCode != 200) {
+			// need to do something here
+		}
+
+		nifiResponse.on('data', (chunk) => {
+			data += chunk;
+		});
+
+		// Ending the response  
+		nifiResponse.on('end', () => {
+			if (data === undefined || data === null || data == '') {
+				data = '[]'
+				console.log('data contained no segments')
+			}
+			resolve(JSON.parse(data))
+		});
+
+	}
+	const errorResponse = (err, reject) => {
+		console.log("Error: ", err)
+		reject(err)
+	}
+
+	const returnPromise = new Promise((resolve, reject) => {
+		/**
+		 * First check if we need to use http or https
+		 * 
+		 * then send the request to nifi and return the result 
+		 * using the `res` var that was passed from the front end client
+		 */
+		if (config.system.nifi.useHTTPS) {
+			const req = https.request(nifiUrl.toString(), (resp) => resolveResponse(resp, resolve)).on("error", (err) => errorResponse(err, reject)).end()
+		} else {
+			const req = https.request(nifiUrl.toString(), (resp) => resolveResponse(resp, resolve)).on("error", (err) => errorResponse(err, reject)).end()
+		}
+	});
+
+
+	return returnPromise
+}
+
 function GetEventData(res, CameraID, Start, End) {
 	// Replace SQL SELECT with call to nifi API
+	const Data = {};
+	const p1 = getSegmentsFromNifi(CameraID, Start, End);
+	const p2 = getEventsFromNifi(CameraID, Start, End);
 
-	const nifiUrl = new URL('/api/nvrjs/geteventdata', config.system.nifi.uri);
-	nifiUrl.searchParams.append('CameraID',CameraID)
-	nifiUrl.searchParams.append('Start',Start)
-	nifiUrl.searchParams.append('End',End)
+	Promise.all([p1, p2]).then(([result1, result2]) => {
+		console.log(result1);
+		Data.segments = result1
+		Data.events = result2
+		console.log('segments:', Data.segments.length)
+		console.log('events:', Data.events.length)
+		res.type('application/json');
+		res.status(200);
+		res.end(JSON.stringify(Data));
+	});
 
-	/**
-	 * First check if we need to use http or https
-	 * 
-	 * then send the request to nifi and return the result 
-	 * using the `res` var that was passed from the front end client
-	 */
-	if (config.system.nifi.useHTTPS) {
-		const req = https.request(nifiUrl.toString(), (nifiResponse) =>{
-			getSegmentsAndEventsFromNifi(nifiResponse,res)
-		}).on("error", (err) => { 
-			console.log("Error: ", err) 
-		}).end()
-	} else {
-		const req = http.request(nifiUrl.toString(), (nifiResponse) =>{
-			getSegmentsAndEventsFromNifi(nifiResponse,res)
-		}).on("error", (err) => { 
-			console.log("Error: ", err) 
-		}).end()
-	}
-	
 	// let STMT = SQL.prepare(
 	// 	'SELECT * FROM Segments WHERE CameraID = ? AND Start >= ? AND End <= ?'
 	// );
@@ -435,11 +493,11 @@ function GetEventData(res, CameraID, Start, End) {
 
 
 const Processors = {};
-mongoConnection.getCameras().then((dbcameras)=>{
+mongoConnection.getCameras().then((dbcameras) => {
 	for (const Cam of dbcameras) {
-	//const cameras = Object.keys(dbcameras);
-	//cameras.forEach((cameraID) => {
-	//	const Cam = dbcameras[cameraID]
+		//const cameras = Object.keys(dbcameras);
+		//cameras.forEach((cameraID) => {
+		//	const Cam = dbcameras[cameraID]
 		InitCamera(Cam, Cam._id.toString())
 	}
 });
@@ -574,67 +632,80 @@ function InitCamera(Cam, cameraID) {
 		detached: true,
 		stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe']
 	};
-	const respawn = (Spawned) => {
-		const MP4F = new MP4Frag();
 
-		const IOptions = {
-			path: '/streams/' + cameraID
-		};
-		const Socket = io(HTTP, IOptions);
-		Socket.on('connection', (ClientSocket) => {
-			if (CheckAuthMW(ClientSocket)) {
-				ClientSocket.emit('segment', MP4F.initialization);
-			}
-		});
-
-		MP4F.on('segment', (data) => {
-			Socket.sockets.sockets.forEach((ClientSocket) => {
-				ClientSocket.emit('segment', data);
-			});
-		});
-
-		Spawned.on('close', () => {
-			// check if mongo says it should be online then restart based on result
-			let isLive = mongoConnection.getCam(cameraID).isLive
+	// TODO:
+	// Since we dont need a constant stream to make recordings we can eliminate this and just have
+	// the stream connection started and stopped based on what the user is viewing
+	const respawn = (command) => {
+		mongoConnection.getCam(cameraID).then((mdbcam) => {
+			console.log(mdbcam)
 			console.log(
 				' - Camera: ' +
-					Cam.name +
-					' was terminated. '
-					+ (isLive ? 'Retrying connection in 10 seconds' : 'Stream is offline')
+				Cam.name +
+				' is '
+				+ (mdbcam.isLive ? 'Online. trying to connect.' : 'Offline. Will check again in 10 seconds')
 			);
-			Spawned.kill();
-			MP4F.destroy();
-			if (isLive) {
+			if (mdbcam.isLive) {
+				Spawned = command()
+				const MP4F = new MP4Frag();
+
+				const IOptions = {
+					path: '/streams/' + cameraID
+				};
+				const Socket = io(HTTP, IOptions);
+				Socket.on('connection', (ClientSocket) => {
+					if (CheckAuthMW(ClientSocket)) {
+						ClientSocket.emit('segment', MP4F.initialization);
+					}
+				});
+
+				MP4F.on('segment', (data) => {
+					Socket.sockets.sockets.forEach((ClientSocket) => {
+						ClientSocket.emit('segment', data);
+					});
+				});
+
+				Spawned.on('close', () => {
+					// check if mongo says it should be online then restart based on result
+					Spawned.kill();
+					MP4F.destroy();
+					setTimeout(() => {
+						respawn(
+							() => childprocess.spawn(config.system.ffmpegLocation, CommandArgs, Options)
+						);
+					}, 10000);
+				});
+				Spawned.stdio[3].on('data', (data) => {
+					MP4F.write(data, 'binary');
+				});
+			} else {
 				setTimeout(() => {
 					respawn(
-						childprocess.spawn(config.system.ffmpegLocation, CommandArgs, Options)
+						() => childprocess.spawn(config.system.ffmpegLocation, CommandArgs, Options)
 					);
 				}, 10000);
 			}
-		});
+		})
 
-		Spawned.stdio[3].on('data', (data) => {
-			MP4F.write(data, 'binary');
-		});
-		Spawned.stdio[4].on('data', (FN) => {
-			if (Processors[cameraID] !== undefined) {
-				const FileName = FN.toString().trim().replace(/\n/g, '');
-				const Start = dayjs(
-					FileName.replace(/.mp4/g, ''),
-					'YYYY-MM-DDTHH-mm-ss'
-				).unix();
-				const End = dayjs().unix();
-				FIFO.enqueue({
-					statement:
-						'INSERT INTO Segments(SegmentID,CameraID,FileName,Start,End) VALUES(?,?,?,?,?)',
-					params: [generateUUID(), cameraID, FileName, Start, End]
-				});
-			}
-		});
+		// Spawned.stdio[4].on('data', (FN) => {
+		// 	if (Processors[cameraID] !== undefined) {
+		// 		const FileName = FN.toString().trim().replace(/\n/g, '');
+		// 		const Start = dayjs(
+		// 			FileName.replace(/.mp4/g, ''),
+		// 			'YYYY-MM-DDTHH-mm-ss'
+		// 		).unix();
+		// 		const End = dayjs().unix();
+		// 		FIFO.enqueue({
+		// 			statement:
+		// 				'INSERT INTO Segments(SegmentID,CameraID,FileName,Start,End) VALUES(?,?,?,?,?)',
+		// 			params: [generateUUID(), cameraID, FileName, Start, End]
+		// 		});
+		// 	}
+		// });
 	};
 
 	respawn(
-		childprocess.spawn(config.system.ffmpegLocation, CommandArgs, Options)
+		() => childprocess.spawn(config.system.ffmpegLocation, CommandArgs, Options)
 	);
 
 	Processors[cameraID] = {
