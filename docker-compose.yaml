@@ -1,0 +1,25 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1.2.1-ffmpeg
+    container_name: mediamtx
+    # The --network=host flag is mandatory if using UDP since Docker can change the source port of UDP packets for routing reasons, and this doesn't allow the RTSP server to identify the senders of the packets. This issue can be avoided by disabling the UDP transport protocol
+    # network_mode: host
+    environment:
+      - MTX_PROTOCOLS=tcp
+    restart: always
+    volumes:
+      - C:\ligma\recordings:/recordings/:rw
+      - .\extras\config.yaml:/mediamtx.yml:rw
+      - .\extras\nifi-webhook.sh:/nifi-webhook.sh:rw
+    ports:
+      - 8554:8554 # RTSP default port
+      - 9997:9997 # api default
+  
+  nvrjs:
+    build: .
+    container_name: nvrjs
+    restart: always
+    ports:
+      - 7878:7878/tcp
+    volumes:
+      - C:\ligma\recordings:/recordings/:r
